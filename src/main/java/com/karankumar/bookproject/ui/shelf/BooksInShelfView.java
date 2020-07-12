@@ -54,7 +54,6 @@ import java.util.stream.Collectors;
 @Log
 public class BooksInShelfView extends VerticalLayout {
 
-
     public static final String TITLE_KEY = "title";
     public static final String AUTHOR_KEY = "author";
     public static final String GENRE_KEY = "genre";
@@ -62,8 +61,10 @@ public class BooksInShelfView extends VerticalLayout {
     public static final String RATING_KEY = "rating";
     public static final String DATE_STARTED_KEY = "dateStartedReading";
     public static final String DATE_FINISHED_KEY = "dateFinishedReading";
+
     public final Grid<Book> bookGrid = new Grid<>(Book.class);
     public final ComboBox<PredefinedShelf.ShelfName> whichShelf;
+
     private final BookForm bookForm;
     private final BookService bookService;
     private final PredefinedShelfService shelfService;
@@ -82,6 +83,8 @@ public class BooksInShelfView extends VerticalLayout {
         configureFilter();
 
         bookForm = new BookForm(shelfService);
+        bookForm.addListener(BookForm.SaveEvent.class, this::saveBook);
+        bookForm.addListener(BookForm.DeleteEvent.class, this::deleteBook);
 
         Button addBook = new Button("Add book");
         addBook.addClickListener(e -> bookForm.addBook());
@@ -93,9 +96,6 @@ public class BooksInShelfView extends VerticalLayout {
 
         add(bookForm);
 
-        bookForm.addListener(BookForm.SaveEvent.class, this::saveBook);
-        bookForm.addListener(BookForm.DeleteEvent.class, this::deleteBook);
-
         bookGrid.asSingleSelect()
                 .addValueChangeListener(
                         event -> {
@@ -106,7 +106,7 @@ public class BooksInShelfView extends VerticalLayout {
                             } else {
                                 editBook(event.getValue());
                             }
-                });
+                        });
     }
 
     private void configureChosenShelf() {
@@ -151,11 +151,11 @@ public class BooksInShelfView extends VerticalLayout {
         if (bookGrid.getColumnByKey(columnKey) == null) {
             LOGGER.log(Level.SEVERE, "Key is null:" + columnKey);
         } else {
-          bookGrid.getColumnByKey(columnKey).setVisible(isOn);
+            bookGrid.getColumnByKey(columnKey).setVisible(isOn);
         }
     }
 
-    private String combineTitleAndSeries(Book book){
+    private String combineTitleAndSeries(Book book) {
         String result;
         if (book.getSeriesPosition() != null && book.getSeriesPosition() > 0) {
             result = String.format("%s (#%d)", book.getTitle(), book.getSeriesPosition());
@@ -167,61 +167,33 @@ public class BooksInShelfView extends VerticalLayout {
 
     private void configureBookGrid() {
         addClassName("book-grid");
-
-        bookGrid.setColumns(
-                TITLE_KEY,
-                AUTHOR_KEY,
-                GENRE_KEY,
-                DATE_STARTED_KEY,
-                DATE_FINISHED_KEY,
-                RATING_KEY,
-                PAGES_KEY);
-        // Sort provided as setColumn provides default sort only for primitive Data types.
-        sortColumn(AUTHOR_KEY);
-    }
-
-    /**
-     * Sorts Column by Name of the Author
-     *
-     * @param columnName
-     */
-    private void sortColumn(final String columnName) {
-        switch (columnName) {
-            case AUTHOR_KEY:
-                Column<Book> authorNameColumn = bookGrid.getColumnByKey(columnName);
-                if (Objects.nonNull(authorNameColumn)) {
-                    authorNameColumn.setComparator(
-                            (author, otherAuthor) ->
-                                    author
-                                            .getAuthor()
-                                            .toString()
-                                            .compareToIgnoreCase(otherAuthor.getAuthor().toString()));
-                } else {
-                    LOGGER.log(Level.SEVERE, "Column AuthorName cannot be Loaded");
-                }
-                break;
-            // Future implementation of comparator when required
-            default:
-                break;
-        }
         bookGrid.setColumns();
         bookGrid.addColumn(this::combineTitleAndSeries) // we want to display the series only if it is bigger than 0
                 .setHeader("Title").setKey(TITLE_KEY)
                 .setSortable(true);
+
         bookGrid.addColumns(AUTHOR_KEY, GENRE_KEY);
+
+        Column<Book> authorNameColumn = bookGrid.getColumnByKey(AUTHOR_KEY);
+        if (Objects.nonNull(authorNameColumn)) {
+            authorNameColumn.setComparator((author, otherAuthor) ->
+                    author.getAuthor()
+                          .toString()
+                          .compareToIgnoreCase(otherAuthor.getAuthor().toString()));
+        }
 
         bookGrid.addColumn(new LocalDateRenderer<>(
                 Book::getDateStartedReading, DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
-				.setHeader("Date started reading")
-				.setComparator(Comparator.comparing(Book::getDateStartedReading))
+                .setHeader("Date started reading")
+                .setComparator(Comparator.comparing(Book::getDateStartedReading))
                 .setKey(DATE_STARTED_KEY);
 
         bookGrid.addColumn(new LocalDateRenderer<>(
                 Book::getDateFinishedReading, DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
-            .setHeader("Date finished reading")
-            .setComparator(Comparator.comparing(Book::getDateStartedReading))
-			.setSortable(true)
-            .setKey(DATE_FINISHED_KEY);
+                .setHeader("Date finished reading")
+                .setComparator(Comparator.comparing(Book::getDateStartedReading))
+                .setSortable(true)
+                .setKey(DATE_FINISHED_KEY);
 
         bookGrid.addColumn(RATING_KEY);
         bookGrid.addColumn(PAGES_KEY);
@@ -244,8 +216,8 @@ public class BooksInShelfView extends VerticalLayout {
                         || book.getTitle().toLowerCase().contains(bookTitle.toLowerCase());
                 bookGrid.setItems(
                         selectedShelf.getBooks().stream()
-                                .filter(caseInsensitiveBookTitleFilter)
-                                .collect(Collectors.toList())
+                                     .filter(caseInsensitiveBookTitleFilter)
+                                     .collect(Collectors.toList())
                 );
             } else {
                 LOGGER.log(
