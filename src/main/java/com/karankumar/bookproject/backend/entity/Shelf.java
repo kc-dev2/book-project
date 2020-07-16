@@ -12,6 +12,9 @@ import javax.persistence.OneToMany;
 import javax.validation.constraints.NotNull;
 import java.util.Set;
 
+/**
+ * Represents a book shelf
+ */
 @MappedSuperclass
 @Getter
 @ToString
